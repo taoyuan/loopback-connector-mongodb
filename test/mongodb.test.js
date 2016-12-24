@@ -193,11 +193,11 @@ describe('mongodb connector', function() {
       db.connector.db.collection('User').indexInformation(function(err, result) {
         /* eslint-disable camelcase */
         var indexes =
-        { _id_: [['_id', 1]],
-          name_age_index: [['name', 1], ['age', -1]],
-          age_index: [['age', -1]],
-          name_1: [['name', 1]],
-          email_1: [['email', 1]] };
+          { _id_: [['_id', 1]],
+            name_age_index: [['name', 1], ['age', -1]],
+            age_index: [['age', -1]],
+            name_1: [['name', 1]],
+            email_1: [['email', 1]] };
         /* eslint-enable camelcase */
         indexes.should.eql(result);
         done(err, result);
@@ -210,11 +210,11 @@ describe('mongodb connector', function() {
       db.connector.db.collection('sh').indexInformation(function(err, result) {
         /* eslint-disable camelcase */
         var indexes =
-        { _id_: [['_id', 1]],
-          geometry_2dsphere: [['geometry', '2dsphere']],
-          power_1: [['power', 1]],
-          name_1: [['name', 1]],
-          address_1: [['address', 1]] };
+          { _id_: [['_id', 1]],
+            geometry_2dsphere: [['geometry', '2dsphere']],
+            power_1: [['power', 1]],
+            name_1: [['name', 1]],
+            address_1: [['address', 1]] };
         /* eslint-enable camelcase */
 
         indexes.should.eql(result);
@@ -430,6 +430,7 @@ describe('mongodb connector', function() {
     var events = [];
     var connector = Post.getDataSource().connector;
     connector.observe('before execute', function(ctx, next) {
+      ctx.options.should.be.object;
       ctx.req.command.should.be.string;
       ctx.req.params.should.be.array;
       events.push('before execute ' + ctx.req.command);
@@ -440,7 +441,7 @@ describe('mongodb connector', function() {
       events.push('after execute ' + ctx.req.command);
       next();
     });
-    Post.create({ title: 'Post1', content: 'Post1 content' }, function(err, p1) {
+    Post.create({ title: 'Post1', content: 'Post1 content' }, { foo: 'bar' }, function(err, p1) {
       Post.find(function(err, results) {
         events.should.eql(['before execute insert', 'after execute insert',
           'before execute find', 'after execute find']);
@@ -586,7 +587,7 @@ describe('mongodb connector', function() {
 
     var describeMongo26 = describe;
     if (process.env.MONGODB_VERSION &&
-        !semver.satisfies(process.env.MONGODB_VERSION, '~2.6.0')) {
+      !semver.satisfies(process.env.MONGODB_VERSION, '~2.6.0')) {
       describeMongo26 = describe.skip;
     }
 
@@ -895,7 +896,7 @@ describe('mongodb connector', function() {
     Product.create({ name: 'bread', price: 100, pricehistory: [{ '2014-11-11': 90 }] },
       function(err, product) {
         var newattributes = { $set: { description: 'goes well with butter' },
-        $addToSet: { pricehistory: { '2014-12-12': 110 }}};
+          $addToSet: { pricehistory: { '2014-12-12': 110 }}};
         product.updateAttributes(newattributes, function(err1, inst) {
           should.not.exist(err1);
 
@@ -935,21 +936,21 @@ describe('mongodb connector', function() {
   it('updateOrCreate: $addToSet should not append item to an Array if it does already exist', function(done) {
     Product.dataSource.settings.allowExtendedOperators = true;
     Product.create({ name: 'bread', price: 100, pricehistory: [{ '2014-11-11': 90 }, { '2014-10-10': 80 }] },
-    function(err, product) {
-      product.$set = { description: 'goes well with butter' };
-      product.$addToSet = { pricehistory: { '2014-10-10': 80 }};
+      function(err, product) {
+        product.$set = { description: 'goes well with butter' };
+        product.$addToSet = { pricehistory: { '2014-10-10': 80 }};
 
-      Product.updateOrCreate(product, function(err, updatedproduct) {
-        should.not.exist(err);
-        should.not.exist(updatedproduct._id);
-        updatedproduct.id.should.be.eql(product.id);
-        updatedproduct.name.should.be.equal(product.name);
-        updatedproduct.description.should.be.equal('goes well with butter');
-        updatedproduct.pricehistory[0]['2014-11-11'].should.be.equal(90);
-        updatedproduct.pricehistory[1]['2014-10-10'].should.be.equal(80);
-        done();
+        Product.updateOrCreate(product, function(err, updatedproduct) {
+          should.not.exist(err);
+          should.not.exist(updatedproduct._id);
+          updatedproduct.id.should.be.eql(product.id);
+          updatedproduct.name.should.be.equal(product.name);
+          updatedproduct.description.should.be.equal('goes well with butter');
+          updatedproduct.pricehistory[0]['2014-11-11'].should.be.equal(90);
+          updatedproduct.pricehistory[1]['2014-10-10'].should.be.equal(80);
+          done();
+        });
       });
-    });
   });
 
   it('updateAttributes: $addToSet should not append item to an Array if it does already exist', function(done) {
@@ -957,7 +958,7 @@ describe('mongodb connector', function() {
     Product.create({ name: 'bread', price: 100, pricehistory: [{ '2014-11-11': 90 }, { '2014-10-10': 80 }] },
       function(err, product) {
         var newattributes = { $set: { description: 'goes well with butter' },
-      $addToSet: { pricehistory: { '2014-12-12': 110 }}};
+          $addToSet: { pricehistory: { '2014-12-12': 110 }}};
         product.updateAttributes(newattributes, function(err1, inst) {
           should.not.exist(err1);
 
@@ -1001,7 +1002,7 @@ describe('mongodb connector', function() {
   it('updateOrCreate: $pop should remove first or last item from an Array', function(done) {
     Product.dataSource.settings.allowExtendedOperators = true;
     Product.create({ name: 'bread', price: 100,
-    pricehistory: [{ '2014-11-11': 90 }, { '2014-10-10': 80 }, { '2014-09-09': 70 }] }, function(err, product) {
+      pricehistory: [{ '2014-11-11': 90 }, { '2014-10-10': 80 }, { '2014-09-09': 70 }] }, function(err, product) {
       product.$set = { description: 'goes well with butter' };
       product.$pop = { pricehistory: 1 };
 
@@ -1072,7 +1073,7 @@ describe('mongodb connector', function() {
     Product.dataSource.settings.allowExtendedOperators = true;
     Product.create({ name: 'bread', price: 100, pricehistory: [70, 80, 90, 100] }, function(err, product) {
       var newattributes = { $set: { description: 'goes well with butter' },
-      $pullAll: { pricehistory: [80, 100] }};
+        $pullAll: { pricehistory: [80, 100] }};
       product.updateAttributes(newattributes, function(err1, inst) {
         should.not.exist(err1);
 
@@ -1118,7 +1119,7 @@ describe('mongodb connector', function() {
     Product.create({ name: 'bread', price: 100, pricehistory:
       [{ '2014-11-11': 90 }, { '2014-10-10': 80 }] }, function(err, product) {
       var newattributes = { $set: { description: 'goes well with butter' },
-      $push: { pricehistory: { '2014-10-10': 80 }}};
+        $push: { pricehistory: { '2014-10-10': 80 }}};
 
       product.updateAttributes(newattributes, function(err1, inst) {
         should.not.exist(err1);
@@ -1269,7 +1270,7 @@ describe('mongodb connector', function() {
   it('updateOrCreate: should handle combination of operators and top level properties without errors', function(done) {
     Product.dataSource.settings.allowExtendedOperators = true;
     Product.create({ name: 'bread', price: 100, ingredients: ['flour'],
-    pricehistory: [{ '2014-11-11': 90 }, { '2014-10-10': 80 }] }, function(err, product) {
+      pricehistory: [{ '2014-11-11': 90 }, { '2014-10-10': 80 }] }, function(err, product) {
       product.$set = { description: 'goes well with butter' };
       product.$push = { ingredients: 'water' };
       product.$addToSet = { pricehistory: { '2014-09-09': 70 }};
@@ -2050,12 +2051,12 @@ describe('mongodb connector', function() {
         });
 
         it('should print a warning when the global flag is set',
-            function(done) {
-              Post.find({ where: { content: { regexp: '^a/g' }}}, function(err, posts) {
-                console.warn.calledOnce.should.be.ok;
-                done();
-              });
+          function(done) {
+            Post.find({ where: { content: { regexp: '^a/g' }}}, function(err, posts) {
+              console.warn.calledOnce.should.be.ok;
+              done();
             });
+          });
       });
     });
 
@@ -2090,12 +2091,12 @@ describe('mongodb connector', function() {
         });
 
         it('should print a warning when the global flag is set',
-            function(done) {
-              Post.find({ where: { content: { regexp: /^a/g }}}, function(err, posts) {
-                console.warn.calledOnce.should.be.ok;
-                done();
-              });
+          function(done) {
+            Post.find({ where: { content: { regexp: /^a/g }}}, function(err, posts) {
+              console.warn.calledOnce.should.be.ok;
+              done();
             });
+          });
       });
     });
 
@@ -2130,12 +2131,12 @@ describe('mongodb connector', function() {
         });
 
         it('should print a warning when the global flag is set',
-            function(done) {
-              Post.find({ where: { content: { regexp: new RegExp(/^a/g) }}}, function(err, posts) {
-                console.warn.calledOnce.should.be.ok;
-                done();
-              });
+          function(done) {
+            Post.find({ where: { content: { regexp: new RegExp(/^a/g) }}}, function(err, posts) {
+              console.warn.calledOnce.should.be.ok;
+              done();
             });
+          });
       });
     });
   });
